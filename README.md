@@ -8,6 +8,12 @@ So far, we have:
 
 ... and more to come.
 
+A few todos:
+
+- comprehensive test suite
+- benchmark suite
+- invoking `allocator_traits::destroy()` (for now we just lazy delete)
+
 ## Works with many underlying container types
 
 **`std::vector` as underlying container:**
