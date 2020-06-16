@@ -19,14 +19,14 @@ class queue_view {
     using iter_type = typename Container::iterator;
     using difference_type = typename std::iterator_traits<iter_type>::difference_type;
 public:
-    queue_view(const iter_type& begin, const iter_type& end) : _begin(begin), _end(end), _front(begin), _back(), _size(0) {}
+    queue_view(const iter_type& begin, const iter_type& end) : _begin(begin), _end(end), _front(begin), _back(begin), _size(0) {}
     queue_view(const queue_view& s) = default;
     queue_view& operator=(const queue_view& s) = default;
 
     /// Element access
     [[nodiscard]] value_type& back() const {
         [[likely]] if (_size) {
-            return *_back;
+            return *std::prev(_back);
         }
         throw std::runtime_error("queue_view is empty, so back() is undefined");
     }
@@ -53,18 +53,18 @@ public:
 
     /// Modifiers
     void push(const value_type& value) {
-        [[unlikely]] if (!_size) {
-            // _top is not a valid pointer, we point it to begin.
-            _back = _front;
-        }
-        else {
-            // Previously inserted element was at the last index.
-            if (_back == _end)
-                _back = _begin;
-            else
-                ++_back;
-        }
+        // Previously inserted element was at the last index.
+        if (_back == _end)
+            _back = _begin;
         *_back = value;
+        // [ x x x x {x} ]
+        //            f  b
+        // Becomes
+        //
+        // [ x} x x x {x ]
+        //      b      f
+        // So _back never hits _begin by popping.
+        ++_back;
         _size++;
     }
 
@@ -77,11 +77,17 @@ public:
         [[unlikely]] if (!_size) {
             throw std::runtime_error("queue_view is empty, so pop() is undefined");
         }
-        // Element to pop is at the end of the container
+        // [ x} x x x {x ]
+        //      b      f
+        //
+        // Becomes
+        //
+        // [ {x} x x x x ]
+        //    f  b
+        // So _front never hits _end by popping.
+        ++_front;
         if (_front == _end)
             _front = _begin;
-        else
-            ++_front;
         _size--;
     }
 
